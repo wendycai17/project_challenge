@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,12 +40,9 @@ public class InventoryAllocator{
 	private Map<String, OrderStatus> orderTable = 
 			Collections.synchronizedMap(new LinkedHashMap<String, OrderStatus>());
 	volatile boolean shouldStop = false;
-	volatile boolean shouldPrint = true;
+	AtomicBoolean shouldPrint = new AtomicBoolean(true);
 	private static final Logger logger = Logger.getLogger(InventoryAllocator.class.getName());
-	private static final Object syncObj = new Object();
 	
-	//sum of the initial invertory counts for all products.
-	private static SafeInteger sumCount = null;
 	/**
 	 * Constructor of the inventory allocator, it's a singleton class
 	 * 
@@ -52,14 +50,14 @@ public class InventoryAllocator{
 	 * @param latch     count down latch to control the termination when all inventory reach 0
 	 */
 	private InventoryAllocator(int nThreads, CountDownLatch latch){
-		logger.log(Level.INFO, "Enter InventoryAllocator");
+		logger.log(Level.FINE, "Enter InventoryAllocator");
 		executor = Executors.newFixedThreadPool(nThreads);
-	    inventoryMap.put("A", new SafeInteger(10));
-		inventoryMap.put("B", new SafeInteger(10));
-		inventoryMap.put("C", new SafeInteger(15));
-		inventoryMap.put("D", new SafeInteger(15));
-		inventoryMap.put("E", new SafeInteger(20));
-		sumCount = new SafeInteger(60); // sum of the inventories above
+	    inventoryMap.put("A", new SafeInteger(150));
+		inventoryMap.put("B", new SafeInteger(150));
+		inventoryMap.put("C", new SafeInteger(100));
+		inventoryMap.put("D", new SafeInteger(100));
+		inventoryMap.put("E", new SafeInteger(200));
+		
 		gateLatch = latch;
 	}
 	
@@ -89,20 +87,19 @@ public class InventoryAllocator{
 	 * @param order a valid order
 	 */
 	public void processOrder(Order order){
-		logger.log(Level.INFO, "Processing order");
+		logger.log(Level.FINE, "Processing order");
 		executor.submit(new OrderProcessor(order));
 	}
 	/**
 	 * print out the final results for the inventory allocation
 	 */
-	public synchronized void printOrders(){
+	public void printOrders(){
 		for(String key: orderTable.keySet()){
 			OrderStatus oStatus = orderTable.get(key);
 			ArrayList<OrderLine> oLines = oStatus.getOrderLine();
 			ArrayList<OrderLine> fLines = oStatus.getFilledOrder();
 			
 			int numLines = oLines.size();
-			//logger.log(Level.WARNING, "key is " + key + "order line size: " + numLines + " filled line size" + fLines.size());
 			int ordered[] = new int[numLines];
 			int filled[] = new int[fLines.size()];
 			int backed[] = new int[numLines];
@@ -155,15 +152,15 @@ public class InventoryAllocator{
 		}
 		
 		public Boolean call(){
-			logger.log(Level.INFO, "Enter OrderProcess call()");
+			logger.log(Level.FINE, "Enter OrderProcess call()");
 			String headId = order.getHeadId();
-			logger.log(Level.INFO, "get order headId:" + headId);
+			logger.log(Level.FINE, "get order headId:" + headId);
 			ArrayList<OrderLine> orderLines = order.getOrderLines();
 			String productName = null;
 			int productQuantity = 0;
 	
 			ArrayList<OrderLine> filledOrder =  new ArrayList<OrderLine>();
-			logger.log(Level.INFO, "received number of order lines:" + orderLines.size());
+			logger.log(Level.FINE, "received number of order lines:" + orderLines.size());
 		    if(shouldStop)
 		    	return shouldStop;
 			for(OrderLine line: orderLines){
@@ -185,9 +182,8 @@ public class InventoryAllocator{
 			if(isAllZero()) {
 				shouldStop = new Boolean(true);
 			}
-			logger.log(Level.FINEST, "Is all zero " + shouldStop);
-			if(shouldStop && shouldPrint){
-				shouldPrint = false;
+			logger.log(Level.INFO, "Is all zero " + shouldStop);
+			if(shouldStop && shouldPrint.compareAndSet(true, false)){
 				printOrders();
 			}
 			return shouldStop;

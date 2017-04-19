@@ -68,7 +68,7 @@ public class DataSourceGenerator {
 						int iHeaderId = 1;
 					    while(!Thread.currentThread().isInterrupted() && countDownLatch.getCount() != 0){
 					    	//generate an order
-					    	logger.log(Level.INFO, "Generate order for stream header " + streamId + ":" + iHeaderId);
+					    	logger.log(Level.FINE, "Generate order for stream header " + streamId + ":" + iHeaderId);
 					    	generateOrder(streamId, String.valueOf(iHeaderId), quantityRandom);
 					    	iHeaderId ++;
 					    	try {
@@ -126,9 +126,9 @@ public class DataSourceGenerator {
 		// if quantity of all order lines are zero, dropped the order since it's not a valid order.
 		if (sumQuantity != 0){
 			order = new Order(streamId + ":" + headerId, orderLines);
-			logger.log(Level.INFO, "headerId is:" + streamId + ":" + headerId);
+			logger.log(Level.FINE, "headerId is:" + streamId + ":" + headerId);
 			for(OrderLine line: orderLines){
-				logger.log(Level.INFO, "product name is:" + line.getProductName() + " quantity is: " + line.getProductQuantity());
+				logger.log(Level.FINE, "product name is:" + line.getProductName() + " quantity is: " + line.getProductQuantity());
 			}
 		
 			InventoryAllocator ia = InventoryAllocator.getInventoryAllocator(countDownLatch);
