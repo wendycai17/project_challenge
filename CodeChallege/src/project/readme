@@ -1,0 +1,39 @@
+In this java application,  I designed four components, they are as following:
+1. Main Driver:  It is the main of this application. 
+ * instantiate the countdown latch
+ * start the data source generator
+ * wait on the latch
+ * stop the data generator and inventory allocator
+ 
+2. Data Source Generator: it continuously generate random uniform distributed one or more steams of orders.
+ It can run as a single thread mode or multi thread mode, which can be set through the constructor.
+ * The data source generator will first be initialized from main driver, it can run in single or multi thread mode. 
+   The main driver will start the order generation process. 
+ * after data source generate the orders, it will send each order to inventory allocator. 
+ * This generator will be terminated when all the products in inventor reached zero.
+
+3. Inventory Allocator: It received the order from data source generator.
+ * It picked the order based on the first in, first order. Once the inventory is allocated, 
+   it can not assigned to other order. If there is no enough inventory for the order line, a backorder will be recorded.
+   If the line is filled, a filled order will be recorded. 
+ * When all the products inventory is reached 0, it triggered count down latch to awake and all the running threads, 
+   service will smooth shut down.
+ * This class can be in single thread or multi threads case depends on the user setting for how many threads it will run. 
+   Currently it is hard coded as 5, user can use a configuration file to specify and program can load the setting from property file.
+ * In the single thread case, inventory allocation is serialized. In the multi threads case, the order is pick on first come first serve, the inventory allocation is safe. The finished process order is not serialized.
+
+4. Utility classes: include Order, Orderlines, OrderStatus and SafeInteger. They are the helper classes. Most of those classes are thread safe or effective thread safe under the scope of this application. 
+
+
+How to use this application. 
+1. I created an eclipse project. you could open the project seeing the source code and build and run it inside eclipse. 
+   I used eclipse neon, the JRE is 1.8. The code should be compatible with JRE 1.6 and 1.7
+
+2. you can import those source files into your environment It's a Java application.
+   I have used the java.util.logging for the logging purpose, I have created a simple logging properties file or logging. 
+   It needs to be put under the project base directory. 
+
+
+
+
+
